@@ -1,5 +1,5 @@
 [package]
-name = "forward-hash"
+name = "dispnet-hash"
 version = "0.1.0"
 edition = "2021"
 authors = ["Christoph Taucher <taucher.ch@gmail.com>"]
