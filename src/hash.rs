@@ -8,7 +8,7 @@ pub enum HashError {
     DigestLengthMissmatch { length: usize, digest: Vec<u8> },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum HashType {
     Blake3
 }
@@ -83,6 +83,18 @@ impl ForwardHash {
 impl fmt::Display for ForwardHash {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.value)
+    }
+}
+
+impl PartialEq for ForwardHash {
+    fn eq(&self, other: &Self) -> bool {
+        self.value == other.value
+    }
+}
+
+impl PartialEq<String> for ForwardHash {
+    fn eq(&self, other: &String) -> bool {
+        self.value == *other
     }
 }
 
