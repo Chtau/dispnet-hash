@@ -23,7 +23,7 @@ impl fmt::Display for HashType {
     }
 }
 
-/// Forward hash is as self descriping hash format.
+/// Dispnet hash is as self descriping hash format.
 /// 
 /// # Display format is structured as followed:
 /// 
@@ -34,13 +34,13 @@ impl fmt::Display for HashType {
 /// # Examles
 /// ```
 /// fn new_hash() {
-///     let forward_hash = ForwardHash::new("test".as_bytes());
-///     let display_hash = format!("{}", forward_hash);
+///     let dispnet_hash = DispnetHash::new("test".as_bytes());
+///     let display_hash = format!("{}", dispnet_hash);
 ///     assert_eq!(display_hash, "010324878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215");
 /// }
 /// ```
 #[derive(Debug)]
-pub struct ForwardHash {
+pub struct DispnetHash {
     pub hash_type: HashType,
     pub digest_length: usize,
     pub digest_value: Vec<u8>,
@@ -48,13 +48,13 @@ pub struct ForwardHash {
 }
 
 trait Hash {
-    fn equal(hash: ForwardHash) -> bool;
+    fn equal(hash: DispnetHash) -> bool;
     fn upgrade();
 }
 
-impl ForwardHash {
+impl DispnetHash {
     pub fn new(value: &[u8]) -> Self {
-        let internal_hash = InternalForwardHash::new(value);
+        let internal_hash = InternalDispnetHash::new(value);
         let internal_hash_value = format!("{}", internal_hash);
         Self {
             hash_type: internal_hash.hash_type,
@@ -65,7 +65,7 @@ impl ForwardHash {
     }
 
     pub fn parse(hash_value: String) -> Result<Self, HashError> {
-        let internal_hash_result = InternalForwardHash::parse(hash_value);
+        let internal_hash_result = InternalDispnetHash::parse(hash_value);
         if internal_hash_result.is_ok() {
             let internal_hash = internal_hash_result.unwrap();
             let internal_hash_value = format!("{}", internal_hash);
@@ -80,32 +80,32 @@ impl ForwardHash {
     }
 }
 
-impl fmt::Display for ForwardHash {
+impl fmt::Display for DispnetHash {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.value)
     }
 }
 
-impl PartialEq for ForwardHash {
+impl PartialEq for DispnetHash {
     fn eq(&self, other: &Self) -> bool {
         self.value == other.value
     }
 }
 
-impl PartialEq<String> for ForwardHash {
+impl PartialEq<String> for DispnetHash {
     fn eq(&self, other: &String) -> bool {
         self.value == *other
     }
 }
 
 #[derive(Debug)]
-struct InternalForwardHash {
+struct InternalDispnetHash {
     pub hash_type: HashType,
     pub digest_length: usize,
     pub digest_value: Vec<u8>,
 }
 
-impl InternalForwardHash {
+impl InternalDispnetHash {
     fn new(value: &[u8]) -> Self {
         let hash = blake3::hash(&value);
         let hash_bytes = hash.as_bytes();
@@ -169,7 +169,7 @@ fn hex_to_bytes(s: &str) -> Option<Vec<u8>> {
     }
 }
 
-impl fmt::Display for InternalForwardHash {
+impl fmt::Display for InternalDispnetHash {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}{:03}{}", self.hash_type, self.digest_length, self.digest_value.iter().map(|x| format!("{:02x}", x)).collect::<String>())
     }
