@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 #[derive(Debug)]
 pub enum HashError {
@@ -64,7 +64,7 @@ impl DispnetHash {
         }
     }
 
-    pub fn parse(hash_value: String) -> Result<Self, HashError> {
+    fn parse(hash_value: &str) -> Result<Self, HashError> {
         let internal_hash_result = InternalDispnetHash::parse(hash_value);
         if internal_hash_result.is_ok() {
             let internal_hash = internal_hash_result.unwrap();
@@ -98,6 +98,14 @@ impl PartialEq<String> for DispnetHash {
     }
 }
 
+impl FromStr for DispnetHash {
+    type Err = HashError;
+
+    fn from_str(s: &str) -> Result<Self, HashError> {
+        DispnetHash::parse(s)
+    }
+}
+
 #[derive(Debug)]
 struct InternalDispnetHash {
     pub hash_type: HashType,
@@ -116,7 +124,7 @@ impl InternalDispnetHash {
         }
     }
 
-    fn parse(hash_value: String) -> Result<Self, HashError> {
+    fn parse(hash_value: &str) -> Result<Self, HashError> {
         let (raw_type,  raw_digest_len_value) = hash_value.split_at(2);
         let (raw_digest_len, raw_digest_value) = raw_digest_len_value.split_at(3);
         let mut type_result = HashType::Blake3;
