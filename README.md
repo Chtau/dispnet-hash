@@ -17,6 +17,7 @@ The hash format follows the **TLV** (type-length-value) pattern.
 
 ```bash
 01     032            4878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215
+02     010            32323538363632303830
 Type | Bytes length | Hash
 ```
 
