@@ -12,6 +12,13 @@ mod tests {
     }
 
     #[test]
+    fn create_crc32_hash() {
+        let dispnet_hash = DispnetHash::create(HashType::CRC, "test".as_bytes());
+        let display_hash = format!("{}", dispnet_hash);
+        assert_eq!(display_hash, "0201032323538363632303830");
+    }
+
+    #[test]
     fn parse_hash() {
         let dispnet_hash = "010324878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215".parse::<DispnetHash>().unwrap();
         assert_eq!(dispnet_hash.hash_type, HashType::Blake3);
@@ -20,9 +27,24 @@ mod tests {
     }
 
     #[test]
+    fn parse_crc32_hash() {
+        let dispnet_hash = "0201032323538363632303830".parse::<DispnetHash>().unwrap();
+        assert_eq!(dispnet_hash.hash_type, HashType::CRC);
+        assert_eq!(dispnet_hash.digest_length, 10);
+        assert_eq!(dispnet_hash.digest_value.len(), 10);
+    }
+
+    #[test]
     fn compare_hash_instances() {
         let dispnet_hash_1 = DispnetHash::new("test".as_bytes());
         let dispnet_hash_2 = DispnetHash::new("test".as_bytes());
+        assert_eq!(dispnet_hash_1, dispnet_hash_2);
+    }
+
+    #[test]
+    fn compare_crc32_hash_instances() {
+        let dispnet_hash_1 = DispnetHash::create(HashType::CRC, "test".as_bytes());
+        let dispnet_hash_2 = DispnetHash::create(HashType::CRC, "test".as_bytes());
         assert_eq!(dispnet_hash_1, dispnet_hash_2);
     }
 
@@ -34,8 +56,21 @@ mod tests {
     }
 
     #[test]
+    fn compare_crc32_hash_instance_and_prase() {
+        let dispnet_hash_1 = DispnetHash::create(HashType::CRC, "test".as_bytes());
+        let dispnet_hash_2 = "0201032323538363632303830".parse::<DispnetHash>().unwrap();
+        assert_eq!(dispnet_hash_1, dispnet_hash_2);
+    }
+
+    #[test]
     fn compare_hash_instance_and_string() {
         let dispnet_hash_1 = DispnetHash::new("test".as_bytes());
         assert_eq!(dispnet_hash_1, "010324878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215".to_owned());
+    }
+
+    #[test]
+    fn compare_crc32_hash_instance_and_string() {
+        let dispnet_hash_1 = DispnetHash::create(HashType::CRC, "test".as_bytes());
+        assert_eq!(dispnet_hash_1, "0201032323538363632303830".to_owned());
     }
 }

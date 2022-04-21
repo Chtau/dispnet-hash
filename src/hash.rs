@@ -10,12 +10,16 @@ pub enum HashError {
 
 #[derive(Debug, PartialEq)]
 pub enum HashType {
-    Blake3
+    Blake3,
+    CRC
 }
 
 impl fmt::Display for HashType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            &HashType::CRC  => {
+                return write!(f, "{:02}", 2);
+            },
             _ => {
                 return write!(f, "{:02}", 1);
             }
@@ -54,7 +58,11 @@ trait Hash {
 
 impl DispnetHash {
     pub fn new(value: &[u8]) -> Self {
-        let internal_hash = InternalDispnetHash::new(value);
+        DispnetHash::create(HashType::Blake3, value)
+    }
+
+    pub fn create(hash_type: HashType, value: &[u8]) -> Self {
+        let internal_hash = InternalDispnetHash::new(hash_type, value);
         let internal_hash_value = format!("{}", internal_hash);
         Self {
             hash_type: internal_hash.hash_type,
@@ -114,13 +122,26 @@ struct InternalDispnetHash {
 }
 
 impl InternalDispnetHash {
-    fn new(value: &[u8]) -> Self {
-        let hash = blake3::hash(&value);
-        let hash_bytes = hash.as_bytes();
-        Self {
-            hash_type: HashType::Blake3,
-            digest_length: hash_bytes.len(),
-            digest_value: hash_bytes.to_vec(),
+    fn new(hash_type: HashType, value: &[u8]) -> Self {
+        match hash_type {
+            HashType::CRC => {
+                let crc32 = crc::Crc::<u32>::new(&crc::CRC_32_ISCSI);
+                let hash = crc32.checksum(&value).to_string();
+                Self {
+                    hash_type: HashType::CRC,
+                    digest_length: hash.len(),
+                    digest_value: hash.into_bytes().to_vec(),
+                }
+            },
+            _ => {
+                let hash = blake3::hash(&value);
+                let hash_bytes = hash.as_bytes();
+                Self {
+                    hash_type: HashType::Blake3,
+                    digest_length: hash_bytes.len(),
+                    digest_value: hash_bytes.to_vec(),
+                }
+            }
         }
     }
 
@@ -131,6 +152,9 @@ impl InternalDispnetHash {
         let raw_type_result = raw_type.parse::<u8>();
         if raw_type_result.is_ok() {
             match raw_type_result.unwrap() {
+                02 => {
+                    type_result = HashType::CRC;
+                },
                 _ => {
                     type_result = HashType::Blake3;
                 }
