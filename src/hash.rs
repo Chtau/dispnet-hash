@@ -41,7 +41,7 @@ impl fmt::Display for HashType {
 /// # Display format is structured as followed:
 /// 
 /// * First 2 characters are the hash type as integer with a leading 0 (Default is 01 which is Blake3 hash).
-/// * Then come 3 characters as integer with leading 0 which is the length of the bytes from the digest.
+/// * Then come 4 characters as integer with leading 0 which is the length of the bytes from the digest.
 /// * Digest value as hex.
 /// 
 /// # Examles
@@ -180,7 +180,7 @@ impl InternalDispnetHash {
 
     fn parse(hash_value: &str) -> Result<Self, HashError> {
         let (raw_type,  raw_digest_len_value) = hash_value.split_at(2);
-        let (raw_digest_len, raw_digest_value) = raw_digest_len_value.split_at(3);
+        let (raw_digest_len, raw_digest_value) = raw_digest_len_value.split_at(4);
         let mut type_result = HashType::Blake3;
         let raw_type_result = raw_type.parse::<u8>();
         if raw_type_result.is_ok() {
@@ -239,6 +239,6 @@ fn hex_to_bytes(s: &str) -> Option<Vec<u8>> {
 
 impl fmt::Display for InternalDispnetHash {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{:03}{}", self.hash_type, self.digest_length, self.digest_value.iter().map(|x| format!("{:02x}", x)).collect::<String>())
+        write!(f, "{}{:04}{}", self.hash_type, self.digest_length, self.digest_value.iter().map(|x| format!("{:02x}", x)).collect::<String>())
     }
 }
