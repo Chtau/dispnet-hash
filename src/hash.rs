@@ -8,15 +8,24 @@ pub enum HashError {
     DigestLengthMissmatch { length: usize, digest: Vec<u8> },
 }
 
+#[derive(Debug)]
+pub struct HashConfig {
+    pub salt: Option<Box<Vec<u8>>>
+}
+
 #[derive(Debug, PartialEq)]
 pub enum HashType {
     Blake3,
-    CRC
+    CRC,
+    Argon2
 }
 
 impl fmt::Display for HashType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            &HashType::Argon2 => {
+                return write!(f, "{:02}", 3);
+            },
             &HashType::CRC  => {
                 return write!(f, "{:02}", 2);
             },
@@ -38,7 +47,7 @@ impl fmt::Display for HashType {
 /// # Examles
 /// ```
 /// fn new_hash() {
-///     let dispnet_hash = DispnetHash::new("test".as_bytes());
+///     let dispnet_hash = dispnet_hash::hash::DispnetHash::new("test".as_bytes());
 ///     let display_hash = format!("{}", dispnet_hash);
 ///     assert_eq!(display_hash, "010324878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215");
 /// }
@@ -58,11 +67,11 @@ trait Hash {
 
 impl DispnetHash {
     pub fn new(value: &[u8]) -> Self {
-        DispnetHash::create(HashType::Blake3, value)
+        DispnetHash::create(HashType::Blake3, value, None)
     }
 
-    pub fn create(hash_type: HashType, value: &[u8]) -> Self {
-        let internal_hash = InternalDispnetHash::new(hash_type, value);
+    pub fn create(hash_type: HashType, value: &[u8], config: Option<HashConfig>) -> Self {
+        let internal_hash = InternalDispnetHash::new(hash_type, value, config);
         let internal_hash_value = format!("{}", internal_hash);
         Self {
             hash_type: internal_hash.hash_type,
@@ -122,8 +131,32 @@ struct InternalDispnetHash {
 }
 
 impl InternalDispnetHash {
-    fn new(hash_type: HashType, value: &[u8]) -> Self {
+    fn new(hash_type: HashType, value: &[u8], config: Option<HashConfig>) -> Self {
+        let mut _hash_config: HashConfig = HashConfig { salt: None };
+        let mut config_hash_salt : Box<Vec<u8>> = Box::new("A8nUz1Pkc0IZ0uJSZNnMlvdLz0T3al5Hjhg2".as_bytes().to_owned());
+        let salt: &[u8];
+                
+        if config.is_some() {
+            _hash_config = config.unwrap();
+            if _hash_config.salt.is_some() {
+                config_hash_salt = _hash_config.salt.unwrap();
+                salt = &(*config_hash_salt);
+            } else {
+                salt = &(*config_hash_salt);
+            }
+        } else {
+            salt = &(*config_hash_salt);
+        }
         match hash_type {
+            HashType::Argon2 => {
+                let argon2_config = argon2::Config::default();
+                let hash = argon2::hash_encoded(&value, &salt, &argon2_config).unwrap();
+                Self {
+                    hash_type: HashType::Argon2,
+                    digest_length: hash.len(),
+                    digest_value: hash.into_bytes().to_vec(),
+                }
+            },
             HashType::CRC => {
                 let crc32 = crc::Crc::<u32>::new(&crc::CRC_32_ISCSI);
                 let hash = crc32.checksum(&value).to_string();
@@ -152,6 +185,9 @@ impl InternalDispnetHash {
         let raw_type_result = raw_type.parse::<u8>();
         if raw_type_result.is_ok() {
             match raw_type_result.unwrap() {
+                03 => {
+                    type_result = HashType::Argon2;
+                },
                 02 => {
                     type_result = HashType::CRC;
                 },

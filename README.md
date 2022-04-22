@@ -11,6 +11,7 @@ The hash format follows the **TLV** (type-length-value) pattern.
 
 * [Blake3](https://github.com/BLAKE3-team/BLAKE3)
 * [CRC32](https://github.com/mrhooray/crc-rs)
+* [Argon2](https://github.com/sru-systems/rust-argon2)
 
 ## Abstract hash structur
 
@@ -39,7 +40,7 @@ assert_eq!(display_hash, "010324878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df
 ### Create a hash with hash type
 
 ```rust
-let dispnet_hash = DispnetHash::create(HashType::CRC, "test".as_bytes());
+let dispnet_hash = DispnetHash::create(HashType::CRC, "test".as_bytes(), None);
 let display_hash = format!("{}", dispnet_hash);
 assert_eq!(display_hash, "0201032323538363632303830");
 ```
