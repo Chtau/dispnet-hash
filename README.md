@@ -7,6 +7,11 @@ The hash format follows the **TLV** (type-length-value) pattern.
 * Then come 3 characters as integer with leading 0 which is the length of the bytes from the digest.
 * Digest value as hex.
 
+## Supported hash algorithm
+
+* [Blake3](https://github.com/BLAKE3-team/BLAKE3)
+* [CRC32](https://github.com/mrhooray/crc-rs)
+
 ## Abstract hash structur
 
 ```xml
