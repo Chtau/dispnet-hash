@@ -54,6 +54,10 @@ fn parse_argon2_salt_hash() {
     assert_eq!(dispnet_hash.digest_value.len(), 84);
 }
 
+fn verify_argon2_hash() {
+    assert!(DispnetHash::verify("030084246172676f6e326924763d3139246d3d343039362c743d332c703d31244d54497a4e4455324e7a6724686f56354d494638596a39746b39356c467365546279554a6e393336484944586754685533637065643151", "test".as_bytes()));
+}
+
 fn compare_hash_instances(instance_1: &DispnetHash, instance_2: &DispnetHash) {
     assert_eq!(instance_1, instance_2);
 }
@@ -78,6 +82,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     let dispnet_crc32_hash_1 = DispnetHash::create(HashType::CRC, "test".as_bytes(), None);
     let dispnet_crc32_hash_2 = DispnetHash::create(HashType::CRC, "test".as_bytes(), None);
     c.bench_function("compare CRC32 hash instances", |b| b.iter(|| compare_hash_instances(&dispnet_crc32_hash_1, &dispnet_crc32_hash_2)));
+
+    c.bench_function("verify Argon2 hash", |b| b.iter(|| verify_argon2_hash()));
 }
 
 criterion_group!(benches, criterion_benchmark);

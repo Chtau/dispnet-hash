@@ -1,4 +1,4 @@
-use std::{fmt, str::FromStr};
+use std::{fmt, str::{FromStr, from_utf8}};
 
 #[derive(Debug)]
 pub enum HashError {
@@ -79,6 +79,19 @@ impl DispnetHash {
             digest_value: internal_hash.digest_value,
             value: internal_hash_value,
         }
+    }
+
+    pub fn verify(hash: &str, value: &[u8]) -> bool {
+        let dispnet_hash = hash.parse::<DispnetHash>();
+        if dispnet_hash.is_ok() {
+            let d_hash = dispnet_hash.unwrap().digest_value;
+            let str_hash = from_utf8(&d_hash).unwrap();
+            let matches = argon2::verify_encoded(str_hash, value);
+            if matches.is_ok() {
+                return  matches.unwrap();
+            }
+        }
+        false
     }
 
     fn parse(hash_value: &str) -> Result<Self, HashError> {

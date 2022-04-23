@@ -55,6 +55,12 @@ assert_eq!(dispnet_hash.digest_length, 32);
 assert_eq!(dispnet_hash.digest_value.len(), 32);
 ```
 
+### Verify Argon2 hash with value
+
+```rust
+assert!(DispnetHash::verify("030084246172676f6e326924763d3139246d3d343039362c743d332c703d31244d54497a4e4455324e7a6724686f56354d494638596a39746b39356c467365546279554a6e393336484944586754685533637065643151", "test".as_bytes()));
+```
+
 ## Build instruction
 
 ### 1.) Install [Rust](https://www.rust-lang.org/tools/install)
