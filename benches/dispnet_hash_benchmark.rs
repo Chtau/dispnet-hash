@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use dispnet_hash::hash::{DispnetHash, HashType, HashConfig};
+use dispnet_hash::{DispnetHash, HashType, HashConfig};
 
 
 fn new_hash() {
