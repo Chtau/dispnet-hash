@@ -83,6 +83,10 @@ cargo test
 cargo bench
 ```
 
+View Html report in target/criterion/report/index.html
+
+Created with [Criterion.rs](https://bheisler.github.io/criterion.rs/book/criterion_rs.html)
+
 ---
 
 ## Made by Christoph Taucher
