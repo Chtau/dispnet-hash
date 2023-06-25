@@ -87,6 +87,12 @@ View Html report in target/criterion/report/index.html
 
 Created with [Criterion.rs](https://bheisler.github.io/criterion.rs/book/criterion_rs.html)
 
+### .) Publish
+
+```sh
+cargo publish --dry-run
+```
+
 ---
 
 ## Made by Christoph Taucher
