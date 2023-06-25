@@ -25,15 +25,15 @@ pub enum HashType {
 
 impl fmt::Display for HashType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &HashType::Argon2 => {
-                return write!(f, "{:02}", 3);
+        match *self {
+            HashType::Argon2 => {
+                write!(f, "{:02}", 3)
             }
-            &HashType::CRC => {
-                return write!(f, "{:02}", 2);
+            HashType::CRC => {
+                write!(f, "{:02}", 2)
             }
             _ => {
-                return write!(f, "{:02}", 1);
+                write!(f, "{:02}", 1)
             }
         }
     }
@@ -112,8 +112,8 @@ impl DispnetHash {
     /// ```
     pub fn verify(hash: &str, value: &[u8]) -> bool {
         let dispnet_hash = hash.parse::<DispnetHash>();
-        if dispnet_hash.is_ok() {
-            return DispnetHash::verify_instance(&dispnet_hash.unwrap(), value);
+        if let Ok(hash) = dispnet_hash {
+            return DispnetHash::verify_instance(&hash, value);
         }
         false
     }
@@ -132,17 +132,16 @@ impl DispnetHash {
     /// ```
     pub fn verify_instance(hash: &DispnetHash, value: &[u8]) -> bool {
         let str_hash = from_utf8(&hash.digest_value).unwrap();
-        let matches = argon2::verify_encoded(str_hash, value);
-        if matches.is_ok() {
-            return matches.unwrap();
+        let matches_result = argon2::verify_encoded(str_hash, value);
+        if let Ok(matches) = matches_result {
+            return matches;
         }
         false
     }
 
     fn parse(hash_value: &str) -> Result<Self, HashError> {
         let internal_hash_result = InternalDispnetHash::parse(hash_value);
-        if internal_hash_result.is_ok() {
-            let internal_hash = internal_hash_result.unwrap();
+        if let Ok(internal_hash) = internal_hash_result {
             let internal_hash_value = format!("{}", internal_hash);
             return Ok(Self {
                 hash_type: internal_hash.hash_type,
@@ -151,7 +150,48 @@ impl DispnetHash {
                 value: internal_hash_value,
             });
         }
-        return Err(internal_hash_result.err().unwrap());
+        Err(internal_hash_result.err().unwrap())
+    }
+
+    /// Convert a hexadecimal string to a vector of bytes.
+    /// Returns `None` if the input string has an odd length which makes it an invalid hex string.
+    /// # Usage
+    /// ```
+    /// use dispnet_hash::DispnetHash;
+    ///
+    /// fn hex_to_bytes() {
+    ///     let hex_string = "74657374";
+    ///     let bytes = DispnetHash::hex_to_bytes(hex_string).unwrap();
+    ///     assert_eq!(bytes, vec![116, 101, 115, 116]);
+    /// }
+    /// ```
+    pub fn hex_to_bytes(s: &str) -> Option<Vec<u8>> {
+        if s.len() % 2 == 0 {
+            (0..s.len())
+                .step_by(2)
+                .map(|i| {
+                    s.get(i..i + 2)
+                        .and_then(|sub| u8::from_str_radix(sub, 16).ok())
+                })
+                .collect()
+        } else {
+            None
+        }
+    }
+    
+    /// Convert a slice of bytes to a hexadecimal string.
+    /// # Usage
+    /// ```
+    /// use dispnet_hash::DispnetHash;
+    ///
+    /// fn bytes_to_hex() {
+    ///     let bytes = vec![116, 101, 115, 116];
+    ///     let hex_string = DispnetHash::bytes_to_hex(&bytes);
+    ///     assert_eq!(hex_string, "74657374");
+    /// }
+    /// ```
+    pub fn bytes_to_hex(bytes: &[u8]) -> String {
+        bytes.iter().map(|b| format!("{:02x}", b)).collect()
     }
 }
 
@@ -195,10 +235,9 @@ impl InternalDispnetHash {
             Box::new("A8nUz1Pkc0IZ0uJSZNnMlvdLz0T3al5Hjhg2".as_bytes().to_owned());
         let salt: &[u8];
 
-        if config.is_some() {
-            _hash_config = config.unwrap();
-            if _hash_config.salt.is_some() {
-                config_hash_salt = _hash_config.salt.unwrap();
+        if let Some(_hash_config) = config {
+            if let Some(config_hash_salt_value) = _hash_config.salt {
+                config_hash_salt = config_hash_salt_value;
                 salt = &(*config_hash_salt);
             } else {
                 salt = &(*config_hash_salt);
@@ -209,7 +248,7 @@ impl InternalDispnetHash {
         match hash_type {
             HashType::Argon2 => {
                 let argon2_config = argon2::Config::default();
-                let hash = argon2::hash_encoded(&value, &salt, &argon2_config).unwrap();
+                let hash = argon2::hash_encoded(value, salt, &argon2_config).unwrap();
                 Self {
                     hash_type: HashType::Argon2,
                     digest_length: hash.len(),
@@ -218,7 +257,7 @@ impl InternalDispnetHash {
             }
             HashType::CRC => {
                 let crc32 = crc::Crc::<u32>::new(&crc::CRC_32_ISCSI);
-                let hash = crc32.checksum(&value).to_string();
+                let hash = crc32.checksum(value).to_string();
                 Self {
                     hash_type: HashType::CRC,
                     digest_length: hash.len(),
@@ -226,7 +265,7 @@ impl InternalDispnetHash {
                 }
             }
             _ => {
-                let hash = blake3::hash(&value);
+                let hash = blake3::hash(value);
                 let hash_bytes = hash.as_bytes();
                 Self {
                     hash_type: HashType::Blake3,
@@ -242,12 +281,12 @@ impl InternalDispnetHash {
         let (raw_digest_len, raw_digest_value) = raw_digest_len_value.split_at(4);
         let mut type_result = HashType::Blake3;
         let raw_type_result = raw_type.parse::<u8>();
-        if raw_type_result.is_ok() {
-            match raw_type_result.unwrap() {
-                03 => {
+        if let Ok(raw_type) = raw_type_result {
+            match raw_type {
+                3 => {
                     type_result = HashType::Argon2;
                 }
-                02 => {
+                2 => {
                     type_result = HashType::CRC;
                 }
                 _ => {
@@ -261,55 +300,39 @@ impl InternalDispnetHash {
             );
         }
 
-        let hex_result = hex_to_bytes(raw_digest_value);
-        if hex_result.is_some() {
-            let hash_bytes = hex_result.unwrap();
+        let hex_result = DispnetHash::hex_to_bytes(raw_digest_value);
+        if let Some(hash_bytes) = hex_result {
             let digest_len_result = raw_digest_len.parse::<usize>();
-            if digest_len_result.is_ok() {
-                let hash_bytes_len = digest_len_result.unwrap();
+            if let Ok(hash_bytes_len) = digest_len_result {
                 if hash_bytes_len == hash_bytes.len() {
-                    return Ok(Self {
+                    Ok(Self {
                         hash_type: type_result,
                         digest_length: hash_bytes_len,
                         digest_value: hash_bytes,
-                    });
+                    })
                 } else {
                     println!(
                         "Length missmatch for digest. Length:{} Digest:{}",
                         hash_bytes_len,
                         hash_bytes.len()
                     );
-                    return Err(HashError::DigestLengthMissmatch {
+                    Err(HashError::DigestLengthMissmatch {
                         length: hash_bytes_len,
                         digest: hash_bytes,
-                    });
+                    })
                 }
             } else {
                 println!("Digest length is not a valid usize:{}", raw_digest_len);
-                return Err(HashError::DigestLength {
+                Err(HashError::DigestLength {
                     raw_digest_length: raw_digest_len.to_owned(),
-                });
+                })
             }
         } else {
             println!("Invalid digest hex value:{}", raw_digest_value);
-            return Err(HashError::InvalidDigest {
+            Err(HashError::InvalidDigest {
                 hex_digest: raw_digest_value.to_owned(),
-            });
-        }
-    }
-}
-
-fn hex_to_bytes(s: &str) -> Option<Vec<u8>> {
-    if s.len() % 2 == 0 {
-        (0..s.len())
-            .step_by(2)
-            .map(|i| {
-                s.get(i..i + 2)
-                    .and_then(|sub| u8::from_str_radix(sub, 16).ok())
             })
-            .collect()
-    } else {
-        None
+        }
     }
 }
 
@@ -464,5 +487,11 @@ mod tests {
     fn verify_argon2_hash() {
         assert!(DispnetHash::verify("030084246172676f6e326924763d3139246d3d343039362c743d332c703d31244d54497a4e4455324e7a6724686f56354d494638596a39746b39356c467365546279554a6e393336484944586754685533637065643151", "test".as_bytes()));
         assert!(!DispnetHash::verify("030084246172676f6e326924763d3139246d3d343039362c743d332c703d31244d54497a4e4455324e7a6724686f56354d494638596a39746b39356c467365546279554a6e393336484944586754685533637065644262", "test".as_bytes()));
+    }
+
+    #[test]
+    fn hex() {
+        assert_eq!(DispnetHash::bytes_to_hex("test".as_bytes()), "74657374");
+        assert_eq!(DispnetHash::hex_to_bytes("74657374").unwrap(), "test".as_bytes());
     }
 }
