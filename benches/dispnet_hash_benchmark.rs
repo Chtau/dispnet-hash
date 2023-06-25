@@ -63,6 +63,12 @@ fn hex_from_to_bytes() {
     assert_eq!(DispnetHash::hex_to_bytes("74657374").unwrap(), "test".as_bytes());
 }
 
+fn encoded_u64() {
+    assert_eq!(DispnetHash::encoded_u64("test".as_bytes()), 1953719668);
+    assert_eq!(DispnetHash::encoded_u64("a".as_bytes()), 97);
+    assert_eq!(DispnetHash::encoded_u64("aasdsakdljaslfhaksjhuahwiuewasdfgs4354sg".as_bytes()), 7454359211325289319);
+}
+
 fn compare_hash_instances(instance_1: &DispnetHash, instance_2: &DispnetHash) {
     assert_eq!(instance_1, instance_2);
 }
@@ -91,6 +97,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("verify Argon2 hash", |b| b.iter(verify_argon2_hash));
 
     c.bench_function("Hex convert from/to byte", |b| b.iter(hex_from_to_bytes));
+
+    c.bench_function("encoded u64", |b| b.iter(encoded_u64));
 }
 
 criterion_group!(benches, criterion_benchmark);

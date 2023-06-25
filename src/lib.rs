@@ -60,6 +60,7 @@ pub struct DispnetHash {
     pub hash_type: HashType,
     pub digest_length: usize,
     pub digest_value: Vec<u8>,
+    pub digest_encoded: u64,
     value: String,
 }
 
@@ -90,10 +91,12 @@ impl DispnetHash {
     pub fn create(hash_type: HashType, value: &[u8], config: Option<HashConfig>) -> Self {
         let internal_hash = InternalDispnetHash::new(hash_type, value, config);
         let internal_hash_value = format!("{}", internal_hash);
+        let encoded: u64 = DispnetHash::encoded_u64(&internal_hash.digest_value);
         Self {
             hash_type: internal_hash.hash_type,
             digest_length: internal_hash.digest_length,
             digest_value: internal_hash.digest_value,
+            digest_encoded: encoded,
             value: internal_hash_value,
         }
     }
@@ -143,10 +146,12 @@ impl DispnetHash {
         let internal_hash_result = InternalDispnetHash::parse(hash_value);
         if let Ok(internal_hash) = internal_hash_result {
             let internal_hash_value = format!("{}", internal_hash);
+            let encoded: u64 = DispnetHash::encoded_u64(&internal_hash.digest_value);
             return Ok(Self {
                 hash_type: internal_hash.hash_type,
                 digest_length: internal_hash.digest_length,
                 digest_value: internal_hash.digest_value,
+                digest_encoded: encoded,
                 value: internal_hash_value,
             });
         }
@@ -192,6 +197,28 @@ impl DispnetHash {
     /// ```
     pub fn bytes_to_hex(bytes: &[u8]) -> String {
         bytes.iter().map(|b| format!("{:02x}", b)).collect()
+    }
+
+    /// Convert a slice of bytes to a u64 integer.
+    /// If the length of the slice is less than 8, it is converted to a u64 integer using little-endian byte order.
+    /// Otherwise, the last 8 bytes of the slice are converted to a u64 integer using little-endian byte order.
+    /// # Usage
+    /// ```
+    /// use dispnet_hash::DispnetHash;
+    ///
+    /// fn encoded_u64() {
+    ///     let bytes = vec![0, 0, 0, 0, 0, 0, 0, 1];
+    ///     let encoded = DispnetHash::encoded_u64(&bytes);
+    ///     assert_eq!(encoded, 72057594037927936);
+    /// }
+    /// ```
+    pub fn encoded_u64(bytes: &[u8]) -> u64 {
+        if bytes.len() < 8 {
+            let mut b = [0; 8];
+            b[..bytes.len()].copy_from_slice(bytes);
+            return u64::from_le_bytes(b);
+        }
+        u64::from_le_bytes(bytes[(bytes.len() - 8)..].try_into().unwrap())
     }
 }
 
@@ -363,10 +390,19 @@ mod tests {
     }
 
     #[test]
+    fn create_blake3_hash() {
+        let dispnet_hash = DispnetHash::create(HashType::Blake3, "test".as_bytes(), None);
+        let display_hash = format!("{}", dispnet_hash);
+        assert_eq!(display_hash, "0100324878ca0425c739fa427f7eda20fe845f6b2e46ba5fe2a14df5b1e32f50603215");
+        assert_eq!(dispnet_hash.digest_encoded, 1527389121149121013);
+    }
+
+    #[test]
     fn create_crc32_hash() {
         let dispnet_hash = DispnetHash::create(HashType::CRC, "test".as_bytes(), None);
         let display_hash = format!("{}", dispnet_hash);
         assert_eq!(display_hash, "02001032323538363632303830");
+        assert_eq!(dispnet_hash.digest_encoded, 3474580104732358709);
     }
 
     #[test]
@@ -374,6 +410,7 @@ mod tests {
         let dispnet_hash = DispnetHash::create(HashType::Argon2, "test".as_bytes(), None);
         let display_hash = format!("{}", dispnet_hash);
         assert_eq!(display_hash, "030121246172676f6e326924763d3139246d3d343039362c743d332c703d31245154687556586f785547746a4d456c614d48564b5531704f626b3173646d524d656a42554d3246734e5568716147637924464d4f7a6f46647754464676397a31435a485751684b7a2f63696f754c55427571494a54756a574d375338");
+        assert_eq!(dispnet_hash.digest_encoded, 4058648494509552980);
     }
 
     #[test]
@@ -381,6 +418,7 @@ mod tests {
         let dispnet_hash = DispnetHash::create(HashType::Argon2, "test".as_bytes(), Some(HashConfig { salt: Some(Box::new(b"12345678".to_vec())) }));
         let display_hash = format!("{}", dispnet_hash);
         assert_eq!(display_hash, "030084246172676f6e326924763d3139246d3d343039362c743d332c703d31244d54497a4e4455324e7a6724686f56354d494638596a39746b39356c467365546279554a6e393336484944586754685533637065643151");
+        assert_eq!(dispnet_hash.digest_encoded, 5850567777771008853);
     }
 
     #[test]
@@ -493,5 +531,12 @@ mod tests {
     fn hex() {
         assert_eq!(DispnetHash::bytes_to_hex("test".as_bytes()), "74657374");
         assert_eq!(DispnetHash::hex_to_bytes("74657374").unwrap(), "test".as_bytes());
+    }
+
+    #[test]
+    fn encoded_u64() {
+        assert_eq!(DispnetHash::encoded_u64("test".as_bytes()), 1953719668);
+        assert_eq!(DispnetHash::encoded_u64("a".as_bytes()), 97);
+        assert_eq!(DispnetHash::encoded_u64("aasdsakdljaslfhaksjhuahwiuewasdfgs4354sg".as_bytes()), 7454359211325289319);
     }
 }
