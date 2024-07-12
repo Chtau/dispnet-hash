@@ -1,6 +1,6 @@
 # Dispnet Hash
 
-Dispnet Hash produces a self descripting hash for easy backwards compatibility.
+Dispnet Hash produces a self describing hash for easy backwards compatibility.
 The hash format follows the **TLV** (type-length-value) pattern.
 
 * First 2 characters are the hash type as integer with a leading 0 (Default is 01 which is **Blake3** hash).
